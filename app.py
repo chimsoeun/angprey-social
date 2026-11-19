@@ -536,22 +536,70 @@ def import_excel():
         conn = database.get_db_connection()
         cursor = conn.cursor()
         inserted_count = 0
+        updated_count = 0
+
         for s in students:
-            cursor.execute('''
-            INSERT INTO students (
-                student_code, full_name, gender, dob, pob,
-                father_name, father_job, mother_name, mother_job,
-                current_address, guardian_name, guardian_job, guardian_relation,
-                grade, academic_year, equity_card_type, equity_card_no, phone, note, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                s['student_code'], s['full_name'], s['gender'], s['dob'], s['pob'],
-                s['father_name'], s['father_job'], s['mother_name'], s['mother_job'],
-                s['current_address'], s['guardian_name'], s['guardian_job'], s['guardian_relation'],
-                s['grade'], s['academic_year'], s['equity_card_type'], s['equity_card_no'],
-                s['phone'], s['note'], s['created_by']
-            ))
-            inserted_count += 1
+            if not s.get('full_name'):
+                continue
+
+            code = str(s.get('student_code') or '').strip()
+            name = str(s.get('full_name') or '').strip()
+            gender = str(s.get('gender') or 'ស្រី').strip()
+            dob = str(s.get('dob') or '').strip()
+            eq_no = str(s.get('equity_card_no') or '').strip()
+            acad_year = str(s.get('academic_year') or '').strip() or get_active_year()
+
+            # ពិនិត្យមើលថាតើសិស្សមានរួចហើយឬនៅ (តាមរយៈ student_code ឬ ៤ លក្ខខណ្ឌ៖ ឈ្មោះ + ភេទ + ថ្ងៃកំណើត + លេខប័ណ្ណ)
+            existing = None
+            if code:
+                existing = cursor.execute('SELECT id FROM students WHERE student_code = ? AND academic_year = ?', (code, acad_year)).fetchone()
+            if not existing and name and dob:
+                existing = cursor.execute('''
+                    SELECT id FROM students 
+                    WHERE full_name = ? AND gender = ? AND dob = ? AND equity_card_no = ? AND academic_year = ?
+                ''', (name, gender, dob, eq_no, acad_year)).fetchone()
+
+            if existing:
+                # មានរួចហើយ -> Update ព័ត៌មាន (មិនបង្កើតជាន់គ្នាឡើយ)
+                cursor.execute('''
+                UPDATE students SET
+                    student_code = COALESCE(NULLIF(?, ''), student_code),
+                    full_name = ?, gender = ?, dob = ?, pob = ?,
+                    father_name = ?, father_job = ?, mother_name = ?, mother_job = ?,
+                    current_address = ?, guardian_name = ?, guardian_job = ?, guardian_relation = ?,
+                    grade = ?, equity_card_type = ?, equity_card_no = ?, phone = ?, note = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                ''', (
+                    code, name, gender, dob, s.get('pob', ''),
+                    s.get('father_name', ''), s.get('father_job', 'កសិករ'), s.get('mother_name', ''), s.get('mother_job', 'កសិករ'),
+                    s.get('current_address', ''), s.get('guardian_name', ''), s.get('guardian_job', 'កសិករ'), s.get('guardian_relation', 'ឪពុក'),
+                    s.get('grade', '១០'), s.get('equity_card_type', 'បណ្ណសមធម៌ក្រីក្រ កម្រិត២'), eq_no,
+                    s.get('phone', ''), s.get('note', ''),
+                    existing['id']
+                ))
+                updated_count += 1
+            else:
+                # សិស្សថ្មី -> បញ្ចូលថ្មី
+                if not code:
+                    count_all = cursor.execute('SELECT COUNT(*) FROM students').fetchone()[0]
+                    code = f"STU-{acad_year[-4:]}-{count_all + 1:04d}"
+                cursor.execute('''
+                INSERT INTO students (
+                    student_code, full_name, gender, dob, pob,
+                    father_name, father_job, mother_name, mother_job,
+                    current_address, guardian_name, guardian_job, guardian_relation,
+                    grade, academic_year, equity_card_type, equity_card_no, phone, note, created_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    code, name, gender, dob, s.get('pob', ''),
+                    s.get('father_name', ''), s.get('father_job', 'កសិករ'), s.get('mother_name', ''), s.get('mother_job', 'កសិករ'),
+                    s.get('current_address', ''), s.get('guardian_name', ''), s.get('guardian_job', 'កសិករ'), s.get('guardian_relation', 'ឪពុក'),
+                    s.get('grade', '១០'), acad_year, s.get('equity_card_type', 'បណ្ណសមធម៌ក្រីក្រ កម្រិត២'),
+                    eq_no, s.get('phone', ''), s.get('note', ''), s.get('created_by', 'ExcelImport')
+                ))
+                inserted_count += 1
+
         conn.commit()
 
         # Update local Excel store
@@ -559,7 +607,10 @@ def import_excel():
         conn.close()
         excel_service.export_students_to_excel(all_students)
 
-        flash(f'បាននាំចូលទិន្នន័យសិស្សចំនួន {inserted_count} នាក់ពី Excel ដោយជោគជ័យ!', 'success')
+        msg = f'នាំចូលជោគជ័យ៖ បញ្ចូលថ្មី {inserted_count} នាក់'
+        if updated_count > 0:
+            msg += f' និងកែប្រែទិន្នន័យចាស់ {updated_count} នាក់ (គ្មានការជាន់ស្ទួនគ្នាឡើយ)'
+        flash(msg, 'success')
     except Exception as e:
         flash(f'មានបញ្ហាក្នុងការនាំចូល៖ {str(e)}', 'danger')
 
@@ -600,33 +651,82 @@ def pull_google():
 
     conn = database.get_db_connection()
     cursor = conn.cursor()
-    # Insert or update
-    synced_count = 0
+    # Insert or update (Upsert) ដោយមិនឱ្យជាន់គ្នា
+    inserted_count = 0
+    updated_count = 0
+
     for s in students:
         if not s.get('full_name'):
             continue
-        cursor.execute('''
-        INSERT INTO students (
-            student_code, full_name, gender, dob, pob,
-            father_name, father_job, mother_name, mother_job,
-            current_address, guardian_name, guardian_job, guardian_relation,
-            grade, academic_year, equity_card_type, equity_card_no, phone, note, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            s.get('student_code', ''), s.get('full_name'), s.get('gender', 'ស្រី'), s.get('dob', ''), s.get('pob', ''),
-            s.get('father_name', ''), s.get('father_job', 'កសិករ'), s.get('mother_name', ''), s.get('mother_job', 'កសិករ'),
-            s.get('current_address', ''), s.get('guardian_name', ''), s.get('guardian_job', 'កសិករ'), s.get('guardian_relation', 'ឪពុក'),
-            s.get('grade', '១០'), s.get('academic_year', get_active_year()), s.get('equity_card_type', 'បណ្ណសមធម៌ក្រីក្រ កម្រិត២'),
-            s.get('equity_card_no', ''), s.get('phone', ''), s.get('note', ''), 'GoogleSheetSync'
-        ))
-        synced_count += 1
+
+        code = str(s.get('student_code') or '').strip()
+        name = str(s.get('full_name') or '').strip()
+        gender = str(s.get('gender') or 'ស្រី').strip()
+        dob = str(s.get('dob') or '').strip()
+        eq_no = str(s.get('equity_card_no') or '').strip()
+        acad_year = str(s.get('academic_year') or '').strip() or get_active_year()
+
+        # ពិនិត្យមើលថាតើសិស្សមានរួចហើយឬនៅ
+        existing = None
+        if code:
+            existing = cursor.execute('SELECT id FROM students WHERE student_code = ? AND academic_year = ?', (code, acad_year)).fetchone()
+        if not existing and name and dob:
+            existing = cursor.execute('''
+                SELECT id FROM students 
+                WHERE full_name = ? AND gender = ? AND dob = ? AND equity_card_no = ? AND academic_year = ?
+            ''', (name, gender, dob, eq_no, acad_year)).fetchone()
+
+        if existing:
+            # Update ព័ត៌មានដែលមានស្រាប់ មិនបង្កើតជាន់ស្ទួនឡើយ
+            cursor.execute('''
+            UPDATE students SET
+                student_code = COALESCE(NULLIF(?, ''), student_code),
+                full_name = ?, gender = ?, dob = ?, pob = ?,
+                father_name = ?, father_job = ?, mother_name = ?, mother_job = ?,
+                current_address = ?, guardian_name = ?, guardian_job = ?, guardian_relation = ?,
+                grade = ?, equity_card_type = ?, equity_card_no = ?, phone = ?, note = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            ''', (
+                code, name, gender, dob, s.get('pob', ''),
+                s.get('father_name', ''), s.get('father_job', 'កសិករ'), s.get('mother_name', ''), s.get('mother_job', 'កសិករ'),
+                s.get('current_address', ''), s.get('guardian_name', ''), s.get('guardian_job', 'កសិករ'), s.get('guardian_relation', 'ឪពុក'),
+                s.get('grade', '១០'), s.get('equity_card_type', 'បណ្ណសមធម៌ក្រីក្រ កម្រិត២'), eq_no,
+                s.get('phone', ''), s.get('note', ''),
+                existing['id']
+            ))
+            updated_count += 1
+        else:
+            # បញ្ចូលសិស្សថ្មី
+            if not code:
+                count_all = cursor.execute('SELECT COUNT(*) FROM students').fetchone()[0]
+                code = f"STU-{acad_year[-4:]}-{count_all + 1:04d}"
+            cursor.execute('''
+            INSERT INTO students (
+                student_code, full_name, gender, dob, pob,
+                father_name, father_job, mother_name, mother_job,
+                current_address, guardian_name, guardian_job, guardian_relation,
+                grade, academic_year, equity_card_type, equity_card_no, phone, note, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                code, name, gender, dob, s.get('pob', ''),
+                s.get('father_name', ''), s.get('father_job', 'កសិករ'), s.get('mother_name', ''), s.get('mother_job', 'កសិករ'),
+                s.get('current_address', ''), s.get('guardian_name', ''), s.get('guardian_job', 'កសិករ'), s.get('guardian_relation', 'ឪពុក'),
+                s.get('grade', '១០'), acad_year, s.get('equity_card_type', 'បណ្ណសមធម៌ក្រីក្រ កម្រិត២'),
+                eq_no, s.get('phone', ''), s.get('note', ''), 'GoogleSheetSync'
+            ))
+            inserted_count += 1
+
     conn.commit()
 
     all_stus = [dict(r) for r in cursor.execute('SELECT * FROM students').fetchall()]
     conn.close()
     excel_service.export_students_to_excel(all_stus)
 
-    return jsonify({'success': True, 'message': f'បានទាញទិន្នន័យចំនួន {synced_count} នាក់ពី Google Sheet ចូល Local Database ដោយជោគជ័យ!'})
+    msg = f'ទាញទិន្នន័យបានជោគជ័យ៖ បញ្ចូលថ្មី {inserted_count} នាក់'
+    if updated_count > 0:
+        msg += f' និង Update ទិន្នន័យដែលមានស្រាប់ {updated_count} នាក់ (គ្មានការជាន់ស្ទួនគ្នាឡើយ)!'
+    return jsonify({'success': True, 'message': msg})
 
 # --- SETTINGS & ACADEMIC YEARS ---
 @app.route('/settings', methods=['GET', 'POST'])
