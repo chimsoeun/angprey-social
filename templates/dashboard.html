@@ -1,0 +1,1625 @@
+{% extends "base.html" %}
+
+{% block title %}ផ្ទាំងគ្រប់គ្រងសិស្សជំនួយសង្គម{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Info & Metric Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+        <!-- Total -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 font-semibold">សរុបសិស្សទាំងអស់</p>
+                <h3 class="text-2xl font-bold text-primary mt-1">{{ total_count }} <span class="text-xs font-normal text-gray-500">នាក់</span></h3>
+            </div>
+            <div class="w-11 h-11 bg-blue-50 text-primary rounded-xl flex items-center justify-center text-lg">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+
+        <!-- Level 1 -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 font-semibold">សមធម៌ កម្រិត១</p>
+                <h3 class="text-2xl font-bold text-rose-600 mt-1">{{ level1_count }} <span class="text-xs font-normal text-gray-500">នាក់</span></h3>
+            </div>
+            <div class="w-11 h-11 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-lg">
+                <i class="fa-solid fa-id-card"></i>
+            </div>
+        </div>
+
+        <!-- Level 2 -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 font-semibold">សមធម៌ កម្រិត២</p>
+                <h3 class="text-2xl font-bold text-amber-600 mt-1">{{ level2_count }} <span class="text-xs font-normal text-gray-500">នាក់</span></h3>
+            </div>
+            <div class="w-11 h-11 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-lg">
+                <i class="fa-solid fa-address-card"></i>
+            </div>
+        </div>
+
+        <!-- Female -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 font-semibold">សិស្សស្រី</p>
+                <h3 class="text-2xl font-bold text-emerald-600 mt-1">{{ female_count }} <span class="text-xs font-normal text-gray-500">នាក់</span></h3>
+            </div>
+            <div class="w-11 h-11 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-lg">
+                <i class="fa-solid fa-person-dress"></i>
+            </div>
+        </div>
+
+        <!-- Male -->
+        <div class="col-span-2 sm:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 font-semibold">សិស្សប្រុស</p>
+                <h3 class="text-2xl font-bold text-sky-600 mt-1">{{ male_count }} <span class="text-xs font-normal text-gray-500">នាក់</span></h3>
+            </div>
+            <div class="w-11 h-11 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center text-lg">
+                <i class="fa-solid fa-person"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Actions & Sync Toolbar -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-3">
+        <!-- Left Buttons: Student Registration & Excel -->
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="openAddModal()" class="bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-bold py-2 px-3.5 rounded-lg shadow transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span>បញ្ចូលសិស្សថ្មី</span>
+            </button>
+
+            <!-- Export to Excel (Local store) -->
+            <a href="{{ url_for('export_excel') }}" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium py-2 px-3 rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-file-excel text-xs"></i>
+                <span>នាំចេញ Excel</span>
+            </a>
+
+            <!-- Import from Excel -->
+            {% if current_user.role in ['SuperAdmin', 'Admin'] %}
+            <button onclick="openImportModal()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs sm:text-sm font-medium py-2 px-3 rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-file-import text-xs"></i>
+                <span>នាំចូលពី Excel</span>
+            </button>
+            {% endif %}
+        </div>
+
+        <!-- Right Buttons: Google Sheet Online Sync -->
+        <div class="flex flex-wrap items-center gap-2">
+            <button id="btn-sync-google" onclick="triggerGoogleSync()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-medium py-2 px-3 rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-cloud-arrow-up text-xs"></i>
+                <span>Sync ទៅ Google Sheet</span>
+            </button>
+
+            {% if current_user.role in ['SuperAdmin', 'Admin'] %}
+            <button id="btn-pull-google" onclick="triggerGooglePull()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium py-2 px-3 rounded-lg shadow-sm transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-cloud-arrow-down text-xs"></i>
+                <span>ទាញពី Google Sheet</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <form id="filter-form" onsubmit="event.preventDefault(); onLiveFilterChange();" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <!-- Search Keyword (Auto Search) -->
+            <div class="lg:col-span-2 relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 text-sm">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </span>
+                <input type="text" id="filter-search-input" name="q" value="{{ search_query }}"
+                    oninput="onLiveFilterChange()"
+                    placeholder="ស្វែងរកស្វ័យប្រវត្តិតាម៖ ឈ្មោះ, អត្តលេខ, លេខប័ណ្ណ, ភូមិ..."
+                    class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                <button type="button" id="filter-clear-btn" onclick="clearSearchInput()" class="{% if not search_query %}hidden{% endif %} absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition" title="លុបពាក្យស្វែងរក">
+                    <i class="fa-solid fa-circle-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Grade Filter -->
+            <div>
+                <select id="filter-grade-select" name="grade" onchange="onLiveFilterChange()" class="w-full py-2 px-3 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <option value="">-- គ្រប់ថ្នាក់ទី --</option>
+                    {% for g in ['៧', '៨', '៩', '១០', '១១', '១២'] %}
+                    <option value="{{ g }}" {% if selected_grade == g %}selected{% endif %}>ថ្នាក់ទី {{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Equity Card Filter -->
+            <div>
+                <select id="filter-card-select" name="card_type" onchange="onLiveFilterChange()" class="w-full py-2 px-3 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <option value="">-- គ្រប់កម្រិតប័ណ្ណ --</option>
+                    <option value="កម្រិត១" {% if 'កម្រិត១' in selected_card %}selected{% endif %}>ប័ណ្ណសមធម៌ កម្រិត១</option>
+                    <option value="កម្រិត២" {% if 'កម្រិត២' in selected_card %}selected{% endif %}>ប័ណ្ណសមធម៌ កម្រិត២</option>
+                </select>
+            </div>
+
+            <!-- Registration Status Filter -->
+            <div>
+                <select id="filter-reg-select" name="reg_status" onchange="onLiveFilterChange()" class="w-full py-2 px-3 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none">
+                    <option value="">-- គ្រប់ប្រវត្តិចុះឈ្មោះ --</option>
+                    <option value="ចុះឈ្មោះថ្មី" {% if selected_reg_status == 'ចុះឈ្មោះថ្មី' %}selected{% endif %}>ចុះឈ្មោះថ្មី</option>
+                    <option value="បច្ចុប្បន្នភាព" {% if selected_reg_status == 'បច្ចុប្បន្នភាព' %}selected{% endif %}>បច្ចុប្បន្នភាព</option>
+                </select>
+            </div>
+
+            <!-- Submit & Reset -->
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="onLiveFilterChange()" class="flex-1 bg-primary hover:bg-primary-dark text-white text-xs sm:text-sm font-semibold py-2 px-3 rounded-lg transition shadow-2xs" title="ចម្រាញ់ទិន្នន័យ">
+                    <i class="fa-solid fa-filter mr-1"></i> ចម្រាញ់
+                </button>
+                <button type="button" onclick="resetAllFilters()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs sm:text-sm font-semibold py-2 px-3 rounded-lg transition text-center shadow-2xs" title="កំណត់ឡើងវិញ">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Students Data Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-xs sm:text-sm font-bold text-gray-700 flex items-center">
+                <i class="fa-solid fa-table-list mr-2 text-primary"></i>
+                បញ្ជីរាយនាមសិស្សទទួលជំនួយសង្គម ឆ្នាំសិក្សា {{ active_year }} (<span id="table-student-count-num">{{ students|length }}</span> នាក់)
+            </h3>
+            <span class="text-[11px] text-gray-400 font-medium">ចុចលើប៊ូតុង "បោះពុម្ព" ដើម្បីចេញលិខិតបញ្ជាក់</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-slate-100 text-gray-700 border-b border-gray-200 text-[11px]">
+                        <th class="py-2.5 px-3 font-bold text-center w-12">ល.រ</th>
+                        <th class="py-2.5 px-3 font-bold">សិស្សឈ្មោះ</th>
+                        <th class="py-2.5 px-2 font-bold text-center">ភេទ</th>
+                        <th class="py-2.5 px-3 font-bold">ថ្ងៃខែឆ្នាំកំណើត</th>
+                        <th class="py-2.5 px-2 font-bold text-center">ថ្នាក់</th>
+                        <th class="py-2.5 px-3 font-bold">ឪពុក / ម្តាយ</th>
+                        <th class="py-2.5 px-3 font-bold">អាសយដ្ឋានបច្ចុប្បន្ន</th>
+                        <th class="py-2.5 px-3 font-bold">ប្រភេទប័ណ្ណសមធម៌</th>
+                        <th class="py-2.5 px-3 font-bold text-center">សកម្មភាព (Actions)</th>
+                    </tr>
+                </thead>
+                <tbody id="students-table-body" class="divide-y divide-gray-100 text-gray-700">
+                    {% if students %}
+                        {% for s in students %}
+                        <tr class="student-row hover:bg-blue-50/50 transition"
+                            data-fullname="{{ s.full_name|lower }}"
+                            data-code="{{ s.student_code|lower }}"
+                            data-cardno="{{ (s.equity_card_no or '')|lower }}"
+                            data-address="{{ (s.current_address or '')|lower }}"
+                            data-father="{{ (s.father_name or '')|lower }}"
+                            data-mother="{{ (s.mother_name or '')|lower }}"
+                            data-grade="{{ s.grade }}"
+                            data-cardtype="{{ s.equity_card_type }}"
+                            data-gender="{{ s.gender }}"
+                            data-regstatus="{{ s.registration_status or 'ចុះឈ្មោះថ្មី' }}">
+                            <td class="row-index py-2.5 px-3 text-center text-gray-400 font-medium">{{ loop.index }}</td>
+                            <td class="py-2.5 px-3">
+                                <div class="font-bold text-gray-900 text-xs sm:text-sm">{{ s.full_name }}</div>
+                                <div class="flex items-center space-x-1.5 mt-0.5">
+                                    <span class="text-[10px] text-gray-400 font-mono">{{ s.student_code }}</span>
+                                    {% if s.registration_status == 'បច្ចុប្បន្នភាព' %}
+                                    <span class="text-[9px] px-1.5 py-0.2 bg-blue-100 text-blue-700 font-semibold rounded border border-blue-200">
+                                        <i class="fa-solid fa-arrows-rotate text-[8px] mr-0.5"></i>បច្ចុប្បន្នភាព
+                                    </span>
+                                    {% else %}
+                                    <span class="text-[9px] px-1.5 py-0.2 bg-emerald-100 text-emerald-700 font-semibold rounded border border-emerald-200">
+                                        <i class="fa-solid fa-user-plus text-[8px] mr-0.5"></i>ចុះឈ្មោះថ្មី
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="py-2.5 px-2 text-center">
+                                <span class="px-2 py-0.5 rounded text-[11px] font-bold {% if s.gender == 'ស្រី' %}bg-pink-50 text-pink-700 border border-pink-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                                    {{ s.gender }}
+                                </span>
+                            </td>
+                            <td class="py-2.5 px-3">{{ s.dob }}</td>
+                            <td class="py-2.5 px-2 text-center font-bold text-primary">ទី{{ s.grade }}</td>
+                            <td class="py-2.5 px-3">
+                                <div>ឪ៖ {{ s.father_name or '-' }} ({{ s.father_job }})</div>
+                                <div>ម្ត៖ {{ s.mother_name or '-' }} ({{ s.mother_job }})</div>
+                            </td>
+                            <td class="py-2.5 px-3 max-w-xs truncate" title="{{ s.current_address }}">
+                                {{ s.current_address or '-' }}
+                            </td>
+                            <td class="py-2.5 px-3">
+                                <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold {% if 'កម្រិត១' in s.equity_card_type %}bg-rose-100 text-rose-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                                    {{ s.equity_card_type }}
+                                </span>
+                                {% if s.equity_card_no %}
+                                <div class="text-[10px] text-gray-400 font-mono mt-0.5">{{ s.equity_card_no }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="py-2.5 px-3 text-center">
+                                <div class="flex items-center justify-center space-x-1.5">
+                                    <!-- Print Official Certificate -->
+                                    <a href="{{ url_for('view_certificate', student_id=s.id) }}" target="_blank"
+                                        class="p-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded transition"
+                                        title="មើល និងបោះពុម្ពលិខិតបញ្ជាក់">
+                                        <i class="fa-solid fa-print"></i>
+                                    </a>
+
+                                    <!-- Download Word (.docx) -->
+                                    <a href="{{ url_for('download_certificate_docx', student_id=s.id) }}"
+                                        class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded transition"
+                                        title="ទាញយកជា Word (.docx)">
+                                        <i class="fa-solid fa-file-word"></i>
+                                    </a>
+
+                                    <!-- Edit Button -->
+                                    <button onclick='openEditModal({{ s|tojson|safe }})'
+                                        class="p-1.5 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded transition"
+                                        title="កែប្រែព័ត៌មាន">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+
+                                    <!-- Delete Button (SuperAdmin / Admin) -->
+                                    {% if current_user.role in ['SuperAdmin', 'Admin'] %}
+                                    <form action="{{ url_for('delete_student', student_id=s.id) }}" method="POST" onsubmit="return confirm('តើអ្នកពិតជាចង់លុបទិន្នន័យសិស្សឈ្មោះ «{{ s.full_name }}» មែនទេ?');" class="inline">
+                                        <button type="submit"
+                                            class="p-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded transition"
+                                            title="លុបចោល">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                    <!-- Dynamic No Results Row -->
+                    <tr id="no-search-results-row" class="{% if students %}hidden{% endif %}">
+                        <td colspan="9" class="py-8 text-center text-gray-400">
+                            <i class="fa-regular fa-folder-open text-3xl mb-2 text-gray-300 block"></i>
+                            <span id="no-search-results-text">មិនទាន់មានទិន្នន័យសិស្ស ឬមិនត្រូវគ្នានឹងការស្វែងរកឡើយ។</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL: ADD STUDENT (បញ្ចូលសិស្សថ្មី) -->
+<div id="modal-add" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col my-auto animate-fade-in">
+        <!-- Header -->
+        <div class="px-6 py-4 bg-primary text-white rounded-t-2xl flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-user-plus text-amber-300 text-lg"></i>
+                <h3 class="font-bold text-sm sm:text-base">បញ្ចូលទិន្នន័យសិស្សជំនួយសង្គមថ្មី (ឆ្នាំសិក្សា៖ {{ active_year }})</h3>
+            </div>
+            <button onclick="closeAddModal()" class="text-white/70 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Form Body -->
+        <form id="add-student-form" action="{{ url_for('add_student') }}" method="POST" onsubmit="handleAddStudentSubmit(event)" class="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
+            <!-- Toast notification inside modal -->
+            <div id="add-modal-alert" class="hidden p-3 rounded-xl border text-xs sm:text-sm font-medium flex items-center justify-between transition-all"></div>
+
+            <!-- Top: Registration Type Selection (ប្រវត្តិចុះឈ្មោះ) -->
+            <div class="p-3.5 bg-gradient-to-r from-slate-50 to-blue-50/40 border border-slate-200 rounded-xl space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <label class="font-bold text-gray-800 text-xs sm:text-sm flex items-center">
+                        <i class="fa-solid fa-clipboard-user text-primary mr-1.5 text-base"></i>
+                        ប្រវត្តិចុះឈ្មោះ <span class="text-red-500 ml-0.5">*</span>
+                    </label>
+                    <span class="text-[11px] text-gray-500 font-medium">ជ្រើសរើសប្រភេទសិស្សមុននឹងបញ្ចូល</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="registration_status" value="ចុះឈ្មោះថ្មី" checked onchange="onAddRegStatusChange(this.value)" class="peer sr-only" id="reg-status-radio-new">
+                        <div class="p-2.5 sm:p-3 border-2 border-gray-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 rounded-xl transition flex items-center space-x-2.5 text-gray-700 peer-checked:text-emerald-900 shadow-2xs">
+                            <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 peer-checked:bg-emerald-600 peer-checked:text-white transition flex-shrink-0">
+                                <i class="fa-solid fa-user-plus text-sm"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-xs sm:text-sm">ចុះឈ្មោះថ្មី</div>
+                                <div class="text-[10px] text-gray-400 peer-checked:text-emerald-700">សិស្សទើបចូលរៀនថ្មី</div>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="registration_status" value="បច្ចុប្បន្នភាព" onchange="onAddRegStatusChange(this.value)" class="peer sr-only" id="reg-status-radio-update">
+                        <div class="p-2.5 sm:p-3 border-2 border-gray-200 peer-checked:border-blue-600 peer-checked:bg-blue-50 rounded-xl transition flex items-center space-x-2.5 text-gray-700 peer-checked:text-blue-900 shadow-2xs">
+                            <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 peer-checked:bg-blue-600 peer-checked:text-white transition flex-shrink-0">
+                                <i class="fa-solid fa-arrows-rotate text-sm"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-xs sm:text-sm">បច្ចុប្បន្នភាព</div>
+                                <div class="text-[10px] text-gray-400 peer-checked:text-blue-700">សិស្សចាស់ក្នុងប្រព័ន្ធ</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Search Panel for "បច្ចុប្បន្នភាព" directly integrated here -->
+                <div id="add-cross-year-search-panel" class="hidden pt-2 border-t border-blue-200/60 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-blue-900 text-xs flex items-center">
+                            <i class="fa-solid fa-magnifying-glass text-blue-600 mr-1.5"></i>
+                            ស្វែងរកទិន្នន័យសិស្សចាស់ (គ្រប់ឆ្នាំសិក្សា) ដើម្បីទាញយកមកធ្វើបច្ចុប្បន្នភាព៖
+                        </span>
+                        <span class="text-[10px] text-blue-700 bg-white px-2 py-0.5 rounded-full border border-blue-200 font-medium">
+                            ស្វែងរកគ្រប់ឆ្នាំសិក្សា
+                        </span>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="add-cross-year-input"
+                            oninput="debounceSearchStudents(this.value)"
+                            placeholder="វាយឈ្មោះសិស្ស, អត្តលេខ, ឬលេខប័ណ្ណសមធម៌... (ឧ. កង ស្រីគីន)"
+                            class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm border border-blue-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-400 bg-white font-medium text-gray-900 shadow-inner">
+                        <i class="fa-solid fa-search absolute left-3 top-2.5 text-blue-400 text-xs sm:text-sm"></i>
+                        <span id="add-cross-year-spinner" class="hidden absolute right-3 top-2.5 text-blue-500">
+                            <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                        </span>
+                    </div>
+                    <!-- Dynamic Search Results -->
+                    <div id="add-cross-year-results" class="hidden max-h-56 overflow-y-auto divide-y divide-blue-100 bg-white border border-blue-200 rounded-lg shadow-md"></div>
+                    <!-- Selected Badge Notification -->
+                    <div id="add-cross-year-selected-badge" class="hidden p-2.5 bg-emerald-50 border border-emerald-300 rounded-lg flex items-center justify-between text-xs text-emerald-900">
+                        <div class="flex items-center space-x-1.5">
+                            <i class="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+                            <span id="add-cross-year-selected-msg"></span>
+                        </div>
+                        <button type="button" onclick="clearCrossYearSelection()" class="text-[11px] text-red-600 hover:text-red-800 underline font-semibold ml-2 flex-shrink-0">
+                            <i class="fa-solid fa-xmark mr-0.5"></i>លុបការជ្រើសរើស
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Duplicate Alert Container -->
+            <div id="add-duplicate-live-alert" class="hidden"></div>
+
+            <!-- Row 1: Code, Name, Gender, Grade -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">អត្តលេខសិស្ស</label>
+                    <input type="text" name="student_code" id="add-student_code" placeholder="ស្វ័យប្រវត្តិបើទទេ" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block font-bold text-gray-700 mb-1">សិស្សឈ្មោះ <span class="text-red-500">*</span></label>
+                    <input type="text" name="full_name" id="add-full_name" onblur="triggerDuplicateCheckLive()" required placeholder="ឧទាហរណ៍៖ កង ស្រីគីន" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ភេទ <span class="text-red-500">*</span></label>
+                    <select name="gender" id="add-gender" onchange="triggerDuplicateCheckLive()" required class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                        <option value="ស្រី" selected>ស្រី</option>
+                        <option value="ប្រុស">ប្រុស</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Row 2: DOB & POB -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1 flex items-center justify-between">
+                        <span>ថ្ងៃខែឆ្នាំកំណើត <span class="text-red-500">*</span></span>
+                        <span class="text-[10px] text-primary font-normal">ជ្រើសរើស ឬវាយ dd-mm-yyyy</span>
+                    </label>
+                    <div class="flex items-center space-x-1.5">
+                        <div class="w-32 flex-shrink-0" title="ចុចដើម្បីរើសថ្ងៃខែឆ្នាំកំណើតតាមប្រតិទិន (Calendar)">
+                            <input type="date" id="add-dob-picker"
+                                onchange="onDobDatePicked('add', this.value); triggerDuplicateCheckLive();"
+                                class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary text-xs bg-white cursor-pointer font-medium">
+                        </div>
+                        <div class="flex-1">
+                            <input type="text" id="add-dob" name="dob" required
+                                onblur="onDobBlur('add', this.value); triggerDuplicateCheckLive();"
+                                placeholder="ឧ. ថ្ងៃទី៣ ខែតុលា ឆ្នាំ២០១០"
+                                class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary text-xs bg-white font-medium text-gray-900">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ទីកន្លែងកំណើត <span class="text-red-500">*</span></label>
+                    <input type="text" name="pob" required placeholder="ភូមិ... ឃុំ... ស្រុក... ខេត្ត..." class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+            </div>
+
+            <!-- Row 3: Father & Mother -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ឪពុកឈ្មោះ</label>
+                    <input type="text" name="father_name" placeholder="ឈ្មោះឪពុក" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary mb-2">
+                    <label class="block font-medium text-gray-600 mb-1">មុខរបរឪពុក</label>
+                    <input type="text" name="father_job" value="កសិករ" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ម្តាយឈ្មោះ</label>
+                    <input type="text" name="mother_name" placeholder="ឈ្មោះម្តាយ" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary mb-2">
+                    <label class="block font-medium text-gray-600 mb-1">មុខរបរម្តាយ</label>
+                    <input type="text" name="mother_job" value="កសិករ" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+            </div>
+
+            <!-- Row 4: Current Address -->
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">អស័យដ្ឋានបច្ចុប្បន្ន <span class="text-red-500">*</span></label>
+                <input type="text" name="current_address" required placeholder="ភូមិ... ឃុំ... ស្រុក... ខេត្ត..." class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+            </div>
+
+            <!-- Row 5: Guardian -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-blue-50/40 rounded-xl border border-blue-100">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">អ្នកអាណាព្យាបាលឈ្មោះ</label>
+                    <input type="text" name="guardian_name" placeholder="ឈ្មោះអាព្យាបាល" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">មុខរបរអាព្យាបាល</label>
+                    <input type="text" name="guardian_job" value="កសិករ" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ត្រូវជា</label>
+                    <input type="text" name="guardian_relation" value="ឪពុក" placeholder="ឧទាហរណ៍៖ ឪពុក, ម្តាយ, មីង, ពូ..." class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+            </div>
+
+            <!-- Row 6: Grade, Equity Card Type, Equity Card No -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ថ្នាក់ទី <span class="text-red-500">*</span></label>
+                    <select name="grade" id="add-grade" required class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                        {% for g in ['៧', '៨', '៩', '១០', '១១', '១២'] %}
+                        <option value="{{ g }}" {% if g == '១០' %}selected{% endif %}>ថ្នាក់ទី {{ g }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ប្រភេទប័ណ្ណសមធម៌ <span class="text-red-500">*</span></label>
+                    <select name="equity_card_type" id="add-equity_card_type" required class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary font-medium">
+                        <option value="បណ្ណសមធម៌ក្រីក្រ កម្រិត១">បណ្ណសមធម៌ក្រីក្រ កម្រិត១</option>
+                        <option value="បណ្ណសមធម៌ក្រីក្រ កម្រិត២" selected>បណ្ណសមធម៌ក្រីក្រ កម្រិត២</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">លេខប័ណ្ណសមធម៌</label>
+                    <input type="text" name="equity_card_no" id="add-equity_card_no" onblur="triggerDuplicateCheckLive()" placeholder="ឧ. IDP-TK-2025-..." class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+            </div>
+
+            <!-- Row 7: Phone & Note -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">លេខទូរស័ព្ទទំនាក់ទំនង</label>
+                    <input type="text" name="phone" placeholder="012 345 678" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">កំណត់ចំណាំ</label>
+                    <input type="text" name="note" placeholder="ព័ត៌មានបន្ថែមផ្សេងៗ" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+            </div>
+
+            <!-- Row 8: Certificate Dates (ចន្ទគតិ & សុរិយគតិ) with Calendar Picker -->
+            <div class="p-3.5 bg-gradient-to-r from-amber-50/80 to-blue-50/80 rounded-xl border border-amber-200/80 space-y-3">
+                <div class="flex items-center justify-between pb-1.5 border-b border-amber-200/60">
+                    <span class="font-bold text-gray-800 text-xs flex items-center">
+                        <i class="fa-regular fa-calendar-check text-amber-600 mr-1.5 text-sm"></i>
+                        កាលបរិច្ឆេទលើលិខិតបញ្ជាក់ (ចន្ទគតិ & សុរិយគតិ)
+                    </span>
+                    <span class="text-[11px] text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-full font-medium">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> គណនាចន្ទគតិស្វ័យប្រវត្តិ
+                    </span>
+                </div>
+
+                <!-- Solar Date: Calendar Picker + Text Input -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                    <div class="sm:col-span-4">
+                        <label class="block font-bold text-gray-700 mb-1 flex items-center justify-between">
+                            <span><i class="fa-regular fa-calendar text-primary mr-1"></i> រើសថ្ងៃសុរិយគតិ</span>
+                            <button type="button" onclick="setTodayDate('add')" class="text-[10px] text-blue-600 hover:text-blue-800 underline font-semibold">
+                                ថ្ងៃនេះ (Today)
+                            </button>
+                        </label>
+                        <input type="date" id="add-cert-solar-raw" name="cert_solar_raw"
+                            onchange="onSolarDatePicked('add', this.value)"
+                            oninput="onSolarDatePicked('add', this.value)"
+                            class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-1 focus:ring-primary focus:border-primary text-xs bg-white cursor-pointer font-medium">
+                    </div>
+                    <div class="sm:col-span-8">
+                        <label class="block font-bold text-gray-700 mb-1">
+                            អក្សរសុរិយគតិពេញ (Solar Text)
+                        </label>
+                        <input type="text" id="add-cert-solar-date" name="cert_solar_date"
+                            placeholder="ធ្វើនៅ វិ.ហ.ស អង្គប្រីយ៍ ថ្ងៃទី១៩ ខែមិថុនា ឆ្នាំ២០២៦"
+                            class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-1 focus:ring-primary focus:border-primary text-xs bg-white">
+                    </div>
+                </div>
+
+                <!-- Lunar Date: Auto-calculated Text Input with live badge -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block font-bold text-gray-700">
+                            <i class="fa-solid fa-moon text-amber-600 mr-1"></i>
+                            ថ្ងៃខែឆ្នាំចន្ទគតិ (Khmer Lunar Date) - បំពេញស្វ័យប្រវត្តិ
+                        </label>
+                        <span id="add-lunar-badge" class="text-[10px] text-gray-500 font-medium"></span>
+                    </div>
+                    <input type="text" id="add-cert-lunar-date" name="cert_lunar_date"
+                        placeholder="ថ្ងៃសុក្រ ៥កើត ខែបឋមាសាឍ ឆ្នាំមមី អដ្ឋស័ក ព.ស.២៥៧០"
+                        class="w-full p-2 border border-amber-300 rounded-lg outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-xs bg-white font-medium text-amber-950">
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="pt-4 border-t border-gray-200 flex justify-end space-x-2">
+                <button type="button" onclick="closeAddModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
+                    បិទ / បោះបង់
+                </button>
+                <button type="submit" id="add-submit-btn" class="px-5 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg shadow transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span id="add-submit-btn-text">រក្សាទុកទិន្នន័យ</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: EDIT STUDENT (កែប្រែសិស្ស) -->
+<div id="modal-edit" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col my-auto">
+        <div class="px-6 py-4 bg-amber-600 text-white rounded-t-2xl flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-user-pen text-white text-lg"></i>
+                <h3 class="font-bold text-sm sm:text-base">កែប្រែទិន្នន័យសិស្ស</h3>
+            </div>
+            <button onclick="closeEditModal()" class="text-white/70 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="edit-form" method="POST" class="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">អត្តលេខ</label>
+                    <input type="text" id="edit-student_code" name="student_code" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block font-bold text-gray-700 mb-1">សិស្សឈ្មោះ <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-full_name" name="full_name" required class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ភេទ</label>
+                    <select id="edit-gender" name="gender" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                        <option value="ស្រី">ស្រី</option>
+                        <option value="ប្រុស">ប្រុស</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1 flex items-center justify-between">
+                        <span>ថ្ងៃខែឆ្នាំកំណើត <span class="text-red-500">*</span></span>
+                        <span class="text-[10px] text-amber-700 font-normal">ជ្រើសរើស ឬវាយ dd-mm-yyyy</span>
+                    </label>
+                    <div class="flex items-center space-x-1.5">
+                        <div class="w-32 flex-shrink-0" title="ចុចដើម្បីរើសថ្ងៃខែឆ្នាំកំណើតតាមប្រតិទិន (Calendar)">
+                            <input type="date" id="edit-dob-picker"
+                                onchange="onDobDatePicked('edit', this.value)"
+                                class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary text-xs bg-white cursor-pointer font-medium">
+                        </div>
+                        <div class="flex-1">
+                            <input type="text" id="edit-dob" name="dob" required
+                                onblur="onDobBlur('edit', this.value)"
+                                class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary text-xs bg-white font-medium text-gray-900">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ទីកន្លែងកំណើត</label>
+                    <input type="text" id="edit-pob" name="pob" required class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ឪពុកឈ្មោះ</label>
+                    <input type="text" id="edit-father_name" name="father_name" class="w-full p-2 border border-gray-300 rounded-lg mb-2">
+                    <label class="block font-medium text-gray-600 mb-1">មុខរបរឪពុក</label>
+                    <input type="text" id="edit-father_job" name="father_job" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ម្តាយឈ្មោះ</label>
+                    <input type="text" id="edit-mother_name" name="mother_name" class="w-full p-2 border border-gray-300 rounded-lg mb-2">
+                    <label class="block font-medium text-gray-600 mb-1">មុខរបរម្តាយ</label>
+                    <input type="text" id="edit-mother_job" name="mother_job" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-bold text-gray-700 mb-1">អស័យដ្ឋានបច្ចុប្បន្ន</label>
+                <input type="text" id="edit-current_address" name="current_address" required class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-blue-50/40 rounded-xl border border-blue-100">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">អ្នកអាណាព្យាបាលឈ្មោះ</label>
+                    <input type="text" id="edit-guardian_name" name="guardian_name" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">មុខរបរអាព្យាបាល</label>
+                    <input type="text" id="edit-guardian_job" name="guardian_job" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ត្រូវជា</label>
+                    <input type="text" id="edit-guardian_relation" name="guardian_relation" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ថ្នាក់ទី</label>
+                    <select id="edit-grade" name="grade" class="w-full p-2 border border-gray-300 rounded-lg">
+                        {% for g in ['៧', '៨', '៩', '១០', '១១', '១២'] %}
+                        <option value="{{ g }}">ថ្នាក់ទី {{ g }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ប្រភេទប័ណ្ណសមធម៌</label>
+                    <select id="edit-equity_card_type" name="equity_card_type" class="w-full p-2 border border-gray-300 rounded-lg">
+                        <option value="បណ្ណសមធម៌ក្រីក្រ កម្រិត១">បណ្ណសមធម៌ក្រីក្រ កម្រិត១</option>
+                        <option value="បណ្ណសមធម៌ក្រីក្រ កម្រិត២">បណ្ណសមធម៌ក្រីក្រ កម្រិត២</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">លេខប័ណ្ណសមធម៌</label>
+                    <input type="text" id="edit-equity_card_no" name="equity_card_no" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">ប្រវត្តិចុះឈ្មោះ</label>
+                    <select id="edit-registration_status" name="registration_status" class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:border-primary font-semibold text-primary">
+                        <option value="ចុះឈ្មោះថ្មី">ចុះឈ្មោះថ្មី</option>
+                        <option value="បច្ចុប្បន្នភាព">បច្ចុប្បន្នភាព</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">លេខទូរស័ព្ទ</label>
+                    <input type="text" id="edit-phone" name="phone" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-700 mb-1">កំណត់ចំណាំ</label>
+                    <input type="text" id="edit-note" name="note" class="w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+            </div>
+
+            <!-- Row 8: Certificate Dates (ចន្ទគតិ & សុរិយគតិ) with Calendar Picker -->
+            <div class="p-3.5 bg-gradient-to-r from-amber-50/80 to-blue-50/80 rounded-xl border border-amber-200/80 space-y-3">
+                <div class="flex items-center justify-between pb-1.5 border-b border-amber-200/60">
+                    <span class="font-bold text-gray-800 text-xs flex items-center">
+                        <i class="fa-regular fa-calendar-check text-amber-600 mr-1.5 text-sm"></i>
+                        កាលបរិច្ឆេទលើលិខិតបញ្ជាក់ (ចន្ទគតិ & សុរិយគតិ)
+                    </span>
+                    <span class="text-[11px] text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-full font-medium">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> គណនាចន្ទគតិស្វ័យប្រវត្តិ
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end">
+                    <div class="sm:col-span-4">
+                        <label class="block font-bold text-gray-700 mb-1 flex items-center justify-between">
+                            <span><i class="fa-regular fa-calendar text-primary mr-1"></i> រើសថ្ងៃសុរិយគតិ</span>
+                            <button type="button" onclick="setTodayDate('edit')" class="text-[10px] text-blue-600 hover:text-blue-800 underline font-semibold">
+                                ថ្ងៃនេះ (Today)
+                            </button>
+                        </label>
+                        <input type="date" id="edit-cert-solar-raw" name="cert_solar_raw"
+                            onchange="onSolarDatePicked('edit', this.value)"
+                            oninput="onSolarDatePicked('edit', this.value)"
+                            class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-1 focus:ring-primary focus:border-primary text-xs bg-white cursor-pointer font-medium">
+                    </div>
+                    <div class="sm:col-span-8">
+                        <label class="block font-bold text-gray-700 mb-1">
+                            អក្សរសុរិយគតិពេញ (Solar Text)
+                        </label>
+                        <input type="text" id="edit-cert-solar-date" name="cert_solar_date"
+                            placeholder="ធ្វើនៅ វិ.ហ.ស អង្គប្រីយ៍ ថ្ងៃទី១៩ ខែមិថុនា ឆ្នាំ២០២៦"
+                            class="w-full p-2 border border-gray-300 rounded-lg outline-none focus:ring-1 focus:ring-primary focus:border-primary text-xs bg-white">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block font-bold text-gray-700">
+                            <i class="fa-solid fa-moon text-amber-600 mr-1"></i>
+                            ថ្ងៃខែឆ្នាំចន្ទគតិ (Khmer Lunar Date) - បំពេញស្វ័យប្រវត្តិ
+                        </label>
+                        <span id="edit-lunar-badge" class="text-[10px] text-gray-500 font-medium"></span>
+                    </div>
+                    <input type="text" id="edit-cert-lunar-date" name="cert_lunar_date"
+                        placeholder="ថ្ងៃសុក្រ ៥កើត ខែបឋមាសាឍ ឆ្នាំមមី អដ្ឋស័ក ព.ស.២៥៧០"
+                        class="w-full p-2 border border-amber-300 rounded-lg outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 text-xs bg-white font-medium text-amber-950">
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-200 flex justify-end space-x-2">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition">
+                    បោះបង់
+                </button>
+                <button type="submit" class="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-check"></i>
+                    <span>រក្សាទុកការកែប្រែ</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: IMPORT EXCEL -->
+<div id="modal-import" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-4">
+            <h3 class="font-bold text-sm sm:text-base text-gray-800 flex items-center">
+                <i class="fa-solid fa-file-excel text-emerald-600 mr-2 text-lg"></i>
+                នាំចូលទិន្នន័យពី Excel
+            </h3>
+            <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('import_excel') }}" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs sm:text-sm">
+            <div>
+                <label class="block font-semibold text-gray-700 mb-2">ជ្រើសរើសឯកសារ Excel (.xlsx)</label>
+                <input type="file" name="excel_file" accept=".xlsx, .xls" required
+                    class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+            </div>
+
+            <div class="p-3 bg-blue-50 rounded-lg text-xs text-blue-900 border border-blue-100">
+                <i class="fa-solid fa-circle-info mr-1"></i>
+                ប្រព័ន្ធនឹងនាំចូលទិន្នន័យដោយស្វ័យប្រវត្តិចូលទៅក្នុងឆ្នាំសិក្សា <strong>{{ active_year }}</strong>។
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-2">
+                <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg text-xs">
+                    បោះបង់
+                </button>
+                <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow flex items-center space-x-1.5">
+                    <i class="fa-solid fa-upload"></i>
+                    <span>ចាប់ផ្តើមនាំចូល</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const SCHOOL_SHORT_NAME = "{{ school_settings.school_short_name }}";
+
+const KHMER_NUM_MAP = {'0': '០', '1': '១', '2': '២', '3': '៣', '4': '៤', '5': '៥', '6': '៦', '7': '៧', '8': '៨', '9': '៩'};
+const KHMER_DIGIT_REV = {'០': '0', '១': '1', '២': '2', '៣': '3', '៤': '4', '៥': '5', '៦': '6', '៧': '7', '៨': '8', '៩': '9'};
+const KHMER_MONTH_NAMES = {
+    1: 'មករា', 2: 'កុម្ភៈ', 3: 'មីនា', 4: 'មេសា',
+    5: 'ឧសភា', 6: 'មិថុនា', 7: 'កក្កដា', 8: 'សីហា',
+    9: 'កញ្ញា', 10: 'តុលា', 11: 'វិច្ឆិកា', 12: 'ធ្នូ'
+};
+const MONTH_REV = {
+    'មករា': '01', 'កុម្ភៈ': '02', 'មីនា': '03', 'មេសា': '04',
+    'ឧសភា': '05', 'មិថុនា': '06', 'កក្កដា': '07', 'សីហា': '08',
+    'កញ្ញា': '09', 'តុលា': '10', 'វិច្ឆិកា': '11', 'ធ្នូ': '12'
+};
+
+function toKhmerNum(num) {
+    return String(num).split('').map(c => KHMER_NUM_MAP[c] || c).join('');
+}
+
+function toWesternDigits(str) {
+    return String(str).split('').map(c => KHMER_DIGIT_REV[c] || c).join('');
+}
+
+function parseAnyDate(dateStr) {
+    if (!dateStr) return null;
+    if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+    dateStr = String(dateStr).trim();
+    // YYYY-MM-DD
+    let m1 = dateStr.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+    if (m1) return new Date(parseInt(m1[1], 10), parseInt(m1[2], 10) - 1, parseInt(m1[3], 10));
+    // DD-MM-YYYY
+    let m2 = dateStr.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+    if (m2) return new Date(parseInt(m2[3], 10), parseInt(m2[2], 10) - 1, parseInt(m2[1], 10));
+    return null;
+}
+
+function tryExtractIso(dobStr) {
+    if (!dobStr) return '';
+    dobStr = String(dobStr).trim();
+    let m1 = dobStr.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+    if (m1) return m1[3] + '-' + m1[2].padStart(2, '0') + '-' + m1[1].padStart(2, '0');
+    let m2 = dobStr.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+    if (m2) return m2[1] + '-' + m2[2].padStart(2, '0') + '-' + m2[3].padStart(2, '0');
+    let km = dobStr.match(/ថ្ងៃទី\s*([០-៩\d]+)\s*ខែ\s*([^\s]+)\s*ឆ្នាំ\s*([០-៩\d]+)/);
+    if (km) {
+        let d = toWesternDigits(km[1]).padStart(2, '0');
+        let mo = MONTH_REV[km[2]];
+        let y = toWesternDigits(km[3]);
+        if (mo && y) return y + '-' + mo + '-' + d;
+    }
+    return '';
+}
+
+function parseAndFormatKhmerDob(inputStr) {
+    if (!inputStr) return '';
+    inputStr = String(inputStr).trim();
+    if (inputStr.includes('ថ្ងៃទី') && inputStr.includes('ខែ')) {
+        return inputStr;
+    }
+    const d = parseAnyDate(inputStr);
+    if (d) {
+        let day = d.getDate();
+        let month = d.getMonth() + 1;
+        let year = d.getFullYear();
+        return `ថ្ងៃទី${toKhmerNum(day)} ខែ${KHMER_MONTH_NAMES[month]} ឆ្នាំ${toKhmerNum(year)}`;
+    }
+    return inputStr;
+}
+
+function onDobDatePicked(prefix, dateVal) {
+    if (!dateVal) return;
+    const formatted = parseAndFormatKhmerDob(dateVal);
+    const dobInput = document.getElementById(prefix + '-dob');
+    if (dobInput) dobInput.value = formatted;
+}
+
+function onDobInput(prefix, val) {
+    if (!val) return;
+    val = val.trim();
+    if (val.length >= 8 && (val.includes('-') || val.includes('/'))) {
+        const d = parseAnyDate(val);
+        if (d) {
+            const formatted = parseAndFormatKhmerDob(val);
+            const dobInput = document.getElementById(prefix + '-dob');
+            if (dobInput) dobInput.value = formatted;
+            const picker = document.getElementById(prefix + '-dob-picker');
+            const iso = tryExtractIso(val);
+            if (picker && iso) picker.value = iso;
+        }
+    }
+}
+
+function onDobBlur(prefix, val) {
+    if (!val) return;
+    const formatted = parseAndFormatKhmerDob(val);
+    const dobInput = document.getElementById(prefix + '-dob');
+    if (dobInput) dobInput.value = formatted;
+    const picker = document.getElementById(prefix + '-dob-picker');
+    const iso = tryExtractIso(val);
+    if (picker && iso) picker.value = iso;
+}
+
+function formatKhmerLunarAndSolar(dateStr) {
+    const d = parseAnyDate(dateStr);
+    if (!d) return null;
+
+    if (window.KhmerCalendar && window.KhmerCalendar.toKhmerLunarDate) {
+        const res = window.KhmerCalendar.toKhmerLunarDate(d);
+        const lunar = `ថ្ងៃ${res.dayOfWeek} ${res.moonDayKhmer}${res.moonStatus} ខែ${res.khmerMonth} ឆ្នាំ${res.animalYear} ${res.sak} ព.ស.${res.buddhistEraYearKhmer}`;
+        const solar = `ធ្វើនៅ ${SCHOOL_SHORT_NAME} ថ្ងៃទី${res.gregorianDayText} ខែ${res.gregorianMonthText} ឆ្នាំ${res.gregorianYearText}`;
+        const badge = `🌙 ${res.moonDayKhmer}${res.moonStatus} ខែ${res.khmerMonth} ឆ្នាំ${res.animalYear}`;
+        return { lunar, solar, badge };
+    }
+    return null;
+}
+
+function onSolarDatePicked(prefix, dateStr) {
+    if (!dateStr) return;
+    const res = formatKhmerLunarAndSolar(dateStr);
+    if (res) {
+        const solarInput = document.getElementById(prefix + '-cert-solar-date');
+        const lunarInput = document.getElementById(prefix + '-cert-lunar-date');
+        const badgeEl = document.getElementById(prefix + '-lunar-badge');
+
+        if (solarInput) solarInput.value = res.solar;
+        if (lunarInput) lunarInput.value = res.lunar;
+        if (badgeEl) badgeEl.innerText = res.badge;
+    }
+}
+
+function setTodayDate(prefix) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    const rawInput = document.getElementById(prefix + '-cert-solar-raw');
+    if (rawInput) {
+        rawInput.value = dateStr;
+    }
+    onSolarDatePicked(prefix, dateStr);
+}
+
+// --- Live Table Filtering (Instant Auto-Search without Clicking Filter) ---
+function onLiveFilterChange() {
+    const searchInput = document.getElementById('filter-search-input');
+    const gradeSelect = document.getElementById('filter-grade-select');
+    const cardSelect = document.getElementById('filter-card-select');
+    const regSelect = document.getElementById('filter-reg-select');
+    const clearBtn = document.getElementById('filter-clear-btn');
+
+    const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+    const grade = (gradeSelect ? gradeSelect.value : '').trim();
+    const card = (cardSelect ? cardSelect.value : '').trim();
+    const reg = (regSelect ? regSelect.value : '').trim();
+
+    // Toggle clear button
+    if (clearBtn) {
+        if (query) {
+            clearBtn.classList.remove('hidden');
+        } else {
+            clearBtn.classList.add('hidden');
+        }
+    }
+
+    const rows = document.querySelectorAll('.student-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const fullName = row.getAttribute('data-fullname') || '';
+        const code = row.getAttribute('data-code') || '';
+        const cardNo = row.getAttribute('data-cardno') || '';
+        const addr = row.getAttribute('data-address') || '';
+        const father = row.getAttribute('data-father') || '';
+        const mother = row.getAttribute('data-mother') || '';
+        const rowGrade = row.getAttribute('data-grade') || '';
+        const rowCard = row.getAttribute('data-cardtype') || '';
+        const rowReg = row.getAttribute('data-regstatus') || 'ចុះឈ្មោះថ្មី';
+
+        const matchQuery = !query ||
+            fullName.includes(query) ||
+            code.includes(query) ||
+            cardNo.includes(query) ||
+            addr.includes(query) ||
+            father.includes(query) ||
+            mother.includes(query);
+
+        const matchGrade = !grade || rowGrade === grade;
+        const matchCard = !card || rowCard.includes(card);
+        const matchReg = !reg || rowReg === reg;
+
+        if (matchQuery && matchGrade && matchCard && matchReg) {
+            row.style.display = '';
+            visibleCount++;
+            const indexCell = row.querySelector('.row-index');
+            if (indexCell) indexCell.textContent = visibleCount;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Update count display
+    const countEl = document.getElementById('table-student-count-num');
+    if (countEl) countEl.textContent = visibleCount;
+
+    // Show/hide empty results row
+    const noResultsRow = document.getElementById('no-search-results-row');
+    const noResultsText = document.getElementById('no-search-results-text');
+    if (noResultsRow) {
+        if (visibleCount === 0) {
+            noResultsRow.classList.remove('hidden');
+            if (noResultsText) {
+                if (query) {
+                    noResultsText.innerHTML = `រកមិនឃើញទិន្នន័យសិស្សត្រូវគ្នានឹងការស្វែងរក «<b>${escapeHtml(query)}</b>» ឡើយ។`;
+                } else {
+                    noResultsText.textContent = 'មិនមានទិន្នន័យសិស្សត្រូវគ្នានឹងលក្ខខណ្ឌចម្រាញ់នេះឡើយ។';
+                }
+            }
+        } else {
+            noResultsRow.classList.add('hidden');
+        }
+    }
+
+    // Keep URL in sync without page reload
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (grade) params.set('grade', grade);
+    if (card) params.set('card_type', card);
+    if (reg) params.set('reg_status', reg);
+    const newQueryStr = params.toString();
+    const newUrl = newQueryStr ? `/?${newQueryStr}` : '/';
+    window.history.replaceState({}, '', newUrl);
+}
+
+function clearSearchInput() {
+    const searchInput = document.getElementById('filter-search-input');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    onLiveFilterChange();
+}
+
+function resetAllFilters() {
+    const searchInput = document.getElementById('filter-search-input');
+    if (searchInput) searchInput.value = '';
+    const gradeSelect = document.getElementById('filter-grade-select');
+    if (gradeSelect) gradeSelect.value = '';
+    const cardSelect = document.getElementById('filter-card-select');
+    if (cardSelect) cardSelect.value = '';
+    const regSelect = document.getElementById('filter-reg-select');
+    if (regSelect) regSelect.value = '';
+    onLiveFilterChange();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Run initial filter on load if search query exists in URL or input
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('filter-search-input');
+    if (searchInput && searchInput.value.trim()) {
+        onLiveFilterChange();
+    }
+});
+
+window.hasAddedStudents = false;
+
+function openAddModal() {
+    window.hasAddedStudents = false;
+    document.getElementById('modal-add').classList.remove('hidden');
+    // Initialize today's date for certificate
+    setTodayDate('add');
+
+    const radioNew = document.getElementById('reg-status-radio-new');
+    if (radioNew) radioNew.checked = true;
+    onAddRegStatusChange('ចុះឈ្មោះថ្មី');
+
+    const alertBox = document.getElementById('add-modal-alert');
+    if (alertBox) {
+        alertBox.innerHTML = '';
+        alertBox.classList.add('hidden');
+    }
+    const liveAlert = document.getElementById('add-duplicate-live-alert');
+    if (liveAlert) {
+        liveAlert.innerHTML = '';
+        liveAlert.classList.add('hidden');
+    }
+    clearCrossYearSelection();
+}
+
+function closeAddModal() {
+    document.getElementById('modal-add').classList.add('hidden');
+    if (window.hasAddedStudents) {
+        window.location.reload();
+    }
+}
+
+function onAddRegStatusChange(val) {
+    const searchPanel = document.getElementById('add-cross-year-search-panel');
+    if (!searchPanel) return;
+    if (val === 'បច្ចុប្បន្នភាព') {
+        searchPanel.classList.remove('hidden');
+        const input = document.getElementById('add-cross-year-input');
+        if (input) {
+            input.focus();
+            if (input.value.trim()) {
+                searchCrossYearStudents(input.value.trim());
+            }
+        }
+    } else {
+        searchPanel.classList.add('hidden');
+    }
+    triggerDuplicateCheckLive();
+}
+
+function showAddModalAlert(type, message) {
+    const el = document.getElementById('add-modal-alert');
+    if (!el) return;
+    el.className = `p-3 rounded-xl border text-xs sm:text-sm font-medium flex items-center justify-between transition-all ${
+        type === 'error'
+        ? 'bg-red-50 border-red-300 text-red-800'
+        : 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-xs'
+    }`;
+    el.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation text-red-600' : 'fa-circle-check text-emerald-600'} text-base flex-shrink-0"></i>
+            <span>${message}</span>
+        </div>
+        <button type="button" onclick="this.parentElement.classList.add('hidden')" class="text-gray-400 hover:text-gray-600 ml-2">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    `;
+    el.classList.remove('hidden');
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function resetAddFormForNextStudent(nextCode) {
+    const form = document.getElementById('add-student-form');
+    if (!form) return;
+
+    // Reset input fields
+    const nameInput = form.querySelector('input[name="full_name"]');
+    if (nameInput) nameInput.value = '';
+
+    const codeInput = form.querySelector('input[name="student_code"]');
+    if (codeInput) codeInput.value = nextCode || '';
+
+    const genderSelect = form.querySelector('select[name="gender"]');
+    if (genderSelect) genderSelect.value = 'ស្រី';
+
+    const dobInput = document.getElementById('add-dob');
+    if (dobInput) dobInput.value = '';
+    const dobPicker = document.getElementById('add-dob-picker');
+    if (dobPicker) dobPicker.value = '';
+
+    const pobInput = form.querySelector('input[name="pob"]');
+    if (pobInput) pobInput.value = '';
+
+    const fatherName = form.querySelector('input[name="father_name"]');
+    if (fatherName) fatherName.value = '';
+    const fatherJob = form.querySelector('input[name="father_job"]');
+    if (fatherJob) fatherJob.value = 'កសិករ';
+
+    const motherName = form.querySelector('input[name="mother_name"]');
+    if (motherName) motherName.value = '';
+    const motherJob = form.querySelector('input[name="mother_job"]');
+    if (motherJob) motherJob.value = 'កសិករ';
+
+    const addr = form.querySelector('input[name="current_address"]');
+    if (addr) addr.value = '';
+
+    const guardianName = form.querySelector('input[name="guardian_name"]');
+    if (guardianName) guardianName.value = '';
+    const guardianJob = form.querySelector('input[name="guardian_job"]');
+    if (guardianJob) guardianJob.value = 'កសិករ';
+    const guardianRel = form.querySelector('input[name="guardian_relation"]');
+    if (guardianRel) guardianRel.value = 'ឪពុក';
+
+    const cardNo = form.querySelector('input[name="equity_card_no"]');
+    if (cardNo) cardNo.value = '';
+
+    const phone = form.querySelector('input[name="phone"]');
+    if (phone) phone.value = '';
+
+    const note = form.querySelector('input[name="note"]');
+    if (note) note.value = '';
+
+    // Reset certificate date to today
+    setTodayDate('add');
+
+    // Clear cross year search & results
+    clearCrossYearSelection();
+
+    // Clear live duplicate warnings
+    const liveAlert = document.getElementById('add-duplicate-live-alert');
+    if (liveAlert) liveAlert.classList.add('hidden');
+
+    // Auto-focus student name for immediate next input
+    if (nameInput) {
+        setTimeout(() => nameInput.focus(), 150);
+    }
+}
+
+async function handleAddStudentSubmit(e) {
+    e.preventDefault();
+    const form = document.getElementById('add-student-form');
+    const submitBtn = document.getElementById('add-submit-btn');
+    const btnText = document.getElementById('add-submit-btn-text');
+    const originalText = btnText.innerHTML;
+
+    // Quick validation
+    const fullName = form.querySelector('input[name="full_name"]').value.trim();
+    if (!fullName) {
+        showAddModalAlert('error', 'សូមបញ្ចូលឈ្មោះសិស្ស!');
+        form.querySelector('input[name="full_name"]').focus();
+        return;
+    }
+
+    submitBtn.disabled = true;
+    btnText.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> កំពុងរក្សាទុក...';
+
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            // Duplicate detected or error
+            showAddModalAlert('error', result.message || 'មានកំហុសក្នុងការរក្សាទុកទិន្នន័យ!');
+        } else {
+            // Success: Keep modal open, clean fields, notify
+            window.hasAddedStudents = true;
+            showAddModalAlert('success', `✅ បានរក្សាទុកទិន្នន័យសិស្ស «<b>${result.student_name}</b>» ដោយជោគជ័យ! ទម្រង់ត្រូវបានសម្អាតរួចរាល់ លោកគ្រូ/អ្នកគ្រូអាចបន្តបញ្ចូលសិស្សបន្ទាប់ទៀតបាន។`);
+            resetAddFormForNextStudent(result.next_student_code);
+        }
+    } catch (err) {
+        showAddModalAlert('error', 'កំហុសតភ្ជាប់បណ្តាញ៖ ' + err.message);
+    } finally {
+        submitBtn.disabled = false;
+        btnText.innerHTML = originalText;
+    }
+}
+
+let dupCheckTimer = null;
+function triggerDuplicateCheckLive() {
+    clearTimeout(dupCheckTimer);
+    dupCheckTimer = setTimeout(checkDuplicateLive, 400);
+}
+
+async function checkDuplicateLive() {
+    const form = document.getElementById('add-student-form');
+    if (!form) return;
+
+    const fullName = form.querySelector('input[name="full_name"]').value.trim();
+    const gender = form.querySelector('select[name="gender"]').value;
+    const dob = document.getElementById('add-dob').value.trim();
+    const cardNo = form.querySelector('input[name="equity_card_no"]').value.trim();
+
+    if (!fullName || (!dob && !cardNo)) {
+        const liveAlert = document.getElementById('add-duplicate-live-alert');
+        if (liveAlert) liveAlert.classList.add('hidden');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/check-duplicate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                full_name: fullName,
+                gender: gender,
+                dob: dob,
+                equity_card_no: cardNo
+            })
+        });
+
+        const data = await res.json();
+        const liveAlert = document.getElementById('add-duplicate-live-alert');
+        if (!liveAlert) return;
+
+        if (data.duplicate) {
+            if (data.scope === 'same_year') {
+                liveAlert.className = 'p-3 bg-red-50 border-2 border-red-400 rounded-xl text-red-800 text-xs font-semibold flex items-start space-x-2 animate-fade-in';
+                liveAlert.innerHTML = `
+                    <i class="fa-solid fa-triangle-exclamation text-red-600 text-base mt-0.5 flex-shrink-0"></i>
+                    <div>
+                        <div class="font-bold text-red-900">⚠️ រកឃើញទិន្នន័យស្ទួនទាំងស្រុងក្នុងឆ្នាំសិក្សានេះ!</div>
+                        <div>${data.message}</div>
+                    </div>
+                `;
+                liveAlert.classList.remove('hidden');
+            } else if (data.scope === 'other_year') {
+                const regStatus = form.querySelector('input[name="registration_status"]:checked')?.value || 'ចុះឈ្មោះថ្មី';
+                if (regStatus === 'ចុះឈ្មោះថ្មី') {
+                    liveAlert.className = 'p-3 bg-blue-50 border-2 border-blue-400 rounded-xl text-blue-900 text-xs font-semibold flex items-start justify-between space-x-2 animate-fade-in';
+                    liveAlert.innerHTML = `
+                        <div class="flex items-start space-x-2">
+                            <i class="fa-solid fa-circle-info text-blue-600 text-base mt-0.5 flex-shrink-0"></i>
+                            <div>
+                                <div class="font-bold">ℹ️ សិស្សនេះធ្លាប់មានក្នុងប្រព័ន្ធពីមុន (${data.student.academic_year})</div>
+                                <div>${data.message}</div>
+                            </div>
+                        </div>
+                        <button type="button" onclick='switchToUpdateMode(${JSON.stringify(data.student)})' class="px-2.5 py-1 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition flex-shrink-0 text-xs shadow-2xs">
+                            ប្តូរជា «បច្ចុប្បន្នភាព»
+                        </button>
+                    `;
+                    liveAlert.classList.remove('hidden');
+                }
+            }
+        } else {
+            liveAlert.classList.add('hidden');
+        }
+    } catch (e) {
+        console.error('Duplicate check error:', e);
+    }
+}
+
+function switchToUpdateMode(student) {
+    const radioUpdate = document.getElementById('reg-status-radio-update');
+    if (radioUpdate) {
+        radioUpdate.checked = true;
+        onAddRegStatusChange('បច្ចុប្បន្នភាព');
+    }
+    selectStudentForUpdate(student);
+    const liveAlert = document.getElementById('add-duplicate-live-alert');
+    if (liveAlert) liveAlert.classList.add('hidden');
+}
+
+let searchDebounceTimer = null;
+function debounceSearchStudents(query) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+        searchCrossYearStudents(query);
+    }, 250);
+}
+
+function searchCrossYearStudents(query) {
+    const q = (query || '').trim();
+    const resultsContainer = document.getElementById('add-cross-year-results');
+    const spinner = document.getElementById('add-cross-year-spinner');
+    if (!resultsContainer) return;
+
+    if (!q) {
+        resultsContainer.innerHTML = '';
+        resultsContainer.classList.add('hidden');
+        return;
+    }
+
+    if (spinner) spinner.classList.remove('hidden');
+
+    fetch(`/api/search-students?q=${encodeURIComponent(q)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (spinner) spinner.classList.add('hidden');
+            resultsContainer.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="p-3 text-center text-gray-500 text-xs">
+                        <i class="fa-regular fa-folder-open mr-1"></i> រកមិនឃើញសិស្សឈ្មោះ ឬទិន្នន័យ «<b>${q}</b>» ក្នុងគ្រប់ឆ្នាំសិក្សាឡើយ
+                    </div>
+                `;
+                resultsContainer.classList.remove('hidden');
+                return;
+            }
+
+            data.forEach(student => {
+                const item = document.createElement('div');
+                item.className = 'p-2.5 hover:bg-blue-50/70 transition cursor-pointer flex items-center justify-between group';
+                item.onclick = () => selectStudentForUpdate(student);
+                item.innerHTML = `
+                    <div class="space-y-0.5">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-gray-900 text-xs sm:text-sm group-hover:text-primary">${student.full_name}</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${student.gender === 'ស្រី' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${student.gender}</span>
+                            <span class="text-[10px] px-1.5 py-0.5 bg-indigo-100 text-indigo-800 font-semibold rounded">
+                                <i class="fa-regular fa-calendar mr-1"></i>${student.academic_year} (ថ្នាក់ទី${student.grade})
+                            </span>
+                        </div>
+                        <div class="text-[11px] text-gray-500 flex flex-wrap gap-x-3 gap-y-0.5">
+                            <span><i class="fa-regular fa-id-badge text-gray-400 mr-1"></i>${student.student_code}</span>
+                            ${student.equity_card_no ? `<span><i class="fa-solid fa-credit-card text-gray-400 mr-1"></i>${student.equity_card_no}</span>` : ''}
+                            ${student.dob ? `<span><i class="fa-regular fa-calendar-days text-gray-400 mr-1"></i>${student.dob}</span>` : ''}
+                        </div>
+                    </div>
+                    <button type="button" class="text-xs font-bold text-primary bg-primary/10 group-hover:bg-primary group-hover:text-white px-2.5 py-1 rounded-md transition flex items-center flex-shrink-0 ml-2">
+                        <i class="fa-solid fa-file-import mr-1"></i> រើសយក
+                    </button>
+                `;
+                resultsContainer.appendChild(item);
+            });
+            resultsContainer.classList.remove('hidden');
+        })
+        .catch(err => {
+            if (spinner) spinner.classList.add('hidden');
+            console.error('Search error:', err);
+        });
+}
+
+function selectStudentForUpdate(student) {
+    const modal = document.getElementById('modal-add');
+    if (!modal) return;
+
+    // Fill demographic data
+    const fullNameInput = modal.querySelector('input[name="full_name"]');
+    if (fullNameInput) fullNameInput.value = student.full_name || '';
+
+    const genderSelect = modal.querySelector('select[name="gender"]');
+    if (genderSelect) genderSelect.value = student.gender || 'ស្រី';
+
+    const dobInput = document.getElementById('add-dob');
+    if (dobInput) {
+        dobInput.value = student.dob || '';
+        const iso = tryExtractIso(student.dob || '');
+        const picker = document.getElementById('add-dob-picker');
+        if (picker && iso) picker.value = iso;
+    }
+
+    const pobInput = modal.querySelector('input[name="pob"]');
+    if (pobInput) pobInput.value = student.pob || '';
+
+    const fatherName = modal.querySelector('input[name="father_name"]');
+    if (fatherName) fatherName.value = student.father_name || '';
+
+    const fatherJob = modal.querySelector('input[name="father_job"]');
+    if (fatherJob) fatherJob.value = student.father_job || 'កសិករ';
+
+    const motherName = modal.querySelector('input[name="mother_name"]');
+    if (motherName) motherName.value = student.mother_name || '';
+
+    const motherJob = modal.querySelector('input[name="mother_job"]');
+    if (motherJob) motherJob.value = student.mother_job || 'កសិករ';
+
+    const address = modal.querySelector('input[name="current_address"]');
+    if (address) address.value = student.current_address || '';
+
+    const guardianName = modal.querySelector('input[name="guardian_name"]');
+    if (guardianName) guardianName.value = student.guardian_name || '';
+
+    const guardianJob = modal.querySelector('input[name="guardian_job"]');
+    if (guardianJob) guardianJob.value = student.guardian_job || 'កសិករ';
+
+    const guardianRel = modal.querySelector('input[name="guardian_relation"]');
+    if (guardianRel) guardianRel.value = student.guardian_relation || 'ឪពុក';
+
+    // Smart grade advance (e.g. 10 -> 11)
+    const gradeProgression = {'៧': '៨', '៨': '៩', '៩': '១០', '១០': '១១', '១១': '១២', '១២': '១២'};
+    const nextGrade = gradeProgression[student.grade] || student.grade;
+    const gradeSelect = modal.querySelector('select[name="grade"]');
+    if (gradeSelect) gradeSelect.value = nextGrade || student.grade || '១០';
+
+    const equityType = modal.querySelector('select[name="equity_card_type"]');
+    if (equityType && student.equity_card_type) equityType.value = student.equity_card_type;
+
+    const equityNo = modal.querySelector('input[name="equity_card_no"]');
+    if (equityNo) equityNo.value = student.equity_card_no || '';
+
+    const phone = modal.querySelector('input[name="phone"]');
+    if (phone) phone.value = student.phone || '';
+
+    const note = modal.querySelector('input[name="note"]');
+    if (note) note.value = student.note || '';
+
+    // Set registration status to 'បច្ចុប្បន្នភាព'
+    const radioUpdate = document.getElementById('reg-status-radio-update');
+    if (radioUpdate) radioUpdate.checked = true;
+
+    // Hide results & show success selection badge
+    const resultsContainer = document.getElementById('add-cross-year-results');
+    if (resultsContainer) resultsContainer.classList.add('hidden');
+
+    const badge = document.getElementById('add-cross-year-selected-badge');
+    const msg = document.getElementById('add-cross-year-selected-msg');
+    if (badge && msg) {
+        msg.innerHTML = `បានទាញយកទិន្នន័យសិស្ស «<b>${student.full_name}</b>» ពីឆ្នាំសិក្សា <b>${student.academic_year}</b> (ថ្នាក់ទី ${student.grade}) រួចរាល់! សូមពិនិត្យថ្នាក់ទីបច្ចុប្បន្ន និងព័ត៌មានផ្សេងៗ រួចចុច "រក្សាទុកទិន្នន័យ"។`;
+        badge.classList.remove('hidden');
+    }
+}
+
+function clearCrossYearSelection() {
+    const input = document.getElementById('add-cross-year-input');
+    if (input) input.value = '';
+    const resultsContainer = document.getElementById('add-cross-year-results');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = '';
+        resultsContainer.classList.add('hidden');
+    }
+    const badge = document.getElementById('add-cross-year-selected-badge');
+    if (badge) badge.classList.add('hidden');
+}
+
+function openEditModal(student) {
+    document.getElementById('edit-form').action = '/student/' + student.id + '/edit';
+    document.getElementById('edit-student_code').value = student.student_code || '';
+    document.getElementById('edit-full_name').value = student.full_name || '';
+    document.getElementById('edit-gender').value = student.gender || 'ស្រី';
+    
+    // DOB
+    const formattedDob = parseAndFormatKhmerDob(student.dob || '');
+    document.getElementById('edit-dob').value = formattedDob;
+    const isoDob = tryExtractIso(student.dob || '');
+    if (isoDob) {
+        document.getElementById('edit-dob-picker').value = isoDob;
+    }
+
+    document.getElementById('edit-pob').value = student.pob || '';
+    document.getElementById('edit-father_name').value = student.father_name || '';
+    document.getElementById('edit-father_job').value = student.father_job || 'កសិករ';
+    document.getElementById('edit-mother_name').value = student.mother_name || '';
+    document.getElementById('edit-mother_job').value = student.mother_job || 'កសិករ';
+    document.getElementById('edit-current_address').value = student.current_address || '';
+    document.getElementById('edit-guardian_name').value = student.guardian_name || '';
+    document.getElementById('edit-guardian_job').value = student.guardian_job || 'កសិករ';
+    document.getElementById('edit-guardian_relation').value = student.guardian_relation || 'ឪពុក';
+    document.getElementById('edit-grade').value = student.grade || '១០';
+    document.getElementById('edit-equity_card_type').value = student.equity_card_type || 'បណ្ណសមធម៌ក្រីក្រ កម្រិត២';
+    document.getElementById('edit-equity_card_no').value = student.equity_card_no || '';
+    document.getElementById('edit-registration_status').value = student.registration_status || 'ចុះឈ្មោះថ្មី';
+    document.getElementById('edit-phone').value = student.phone || '';
+    document.getElementById('edit-note').value = student.note || '';
+
+    // Certificate dates
+    const editRaw = document.getElementById('edit-cert-solar-raw');
+    const editSolar = document.getElementById('edit-cert-solar-date');
+    const editLunar = document.getElementById('edit-cert-lunar-date');
+
+    if (student.cert_solar_raw) {
+        editRaw.value = student.cert_solar_raw;
+        onSolarDatePicked('edit', student.cert_solar_raw);
+    } else {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        editRaw.value = dateStr;
+        onSolarDatePicked('edit', dateStr);
+    }
+
+    if (student.cert_solar_date) {
+        editSolar.value = student.cert_solar_date;
+    }
+    if (student.cert_lunar_date) {
+        editLunar.value = student.cert_lunar_date;
+    }
+
+    document.getElementById('modal-edit').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('modal-edit').classList.add('hidden');
+}
+
+function openImportModal() {
+    document.getElementById('modal-import').classList.remove('hidden');
+}
+function closeImportModal() {
+    document.getElementById('modal-import').classList.add('hidden');
+}
+
+// Google Sheet Sync triggers
+function triggerGoogleSync() {
+    const btn = document.getElementById('btn-sync-google');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> កំពុង Sync...';
+    btn.disabled = true;
+
+    fetch('/sync/google-sheet', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+        })
+        .catch(err => {
+            alert('កំហុស៖ ' + err);
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+}
+
+function triggerGooglePull() {
+    if (!confirm('តើអ្នកពិតជាចង់ទាញទិន្នន័យពី Google Sheet ចូល Local មែនទេ?')) return;
+    const btn = document.getElementById('btn-pull-google');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> កំពុងទាញ...';
+    btn.disabled = true;
+
+    fetch('/pull/google-sheet', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(err => {
+            alert('កំហុស៖ ' + err);
+        })
+        .finally(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+}
+</script>
+{% endblock %}
